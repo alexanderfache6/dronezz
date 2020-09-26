@@ -2,3 +2,6 @@
 *.pyc
 
 /missions/mission_1_segmentation/*
+/missions/mission_2_segmentation/*
+/missions/mission_3_segmentation/*
+/missions/mission_4_segmentation/*

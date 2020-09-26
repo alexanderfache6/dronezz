@@ -14,7 +14,6 @@ def run(mission_number):
 
         metadata[field] = value
 
-    # self.metadata['cmpx_ratio']
     with open(get_mission_file_path(mission_number) + 'metadata.json', 'w') as file:
         json.dump(metadata, file)
 
