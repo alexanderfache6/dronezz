@@ -1,0 +1,30 @@
+fit curve when selecting regions
+pick 2 landmarks
+
+match cm/px ratio of reference
+align landmarks to reference
+
+mission_1_metadata.json
+  cm/px
+
+compare to total ideal - choose ideal from all missions and use this in the end
+  histogram
+  mean, standard deviation, covariance
+  kind of like a z score
+
+
+
+Steps
+Upload project to Pix4Dcloud to process
+download orthomosaic image
+run through tiff converter twice
+
+file names
+mission_#_orthomosaic_1.tiff
+mission_#_orthomosaic_2.tiff
+mission_#_orthomosaic_FINAL.tiff
+
+run image_segmentation_part_1.py with mission_#_orthomosaic_FINAL.tiff
+upload resulting npy and png to Dropbox
+
+create mission_#_metadata.json file

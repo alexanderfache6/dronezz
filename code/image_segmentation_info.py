@@ -14,5 +14,9 @@ SAVE_REGIONS = False
 SAVE_SAMPLES = False
 SAVE_LANDMARKS = True
 
+def get_mission_file_path(mission_number):
+    return '..\\missions\\mission_' + str(mission_number) + '\\mission_' + str(mission_number) + '_'
+
+
 def get_mission_segmentation_file_path(mission_number):
     return '..\\missions\\mission_' + str(mission_number) + '_segmentation\\mission_' + str(mission_number) + '_'
