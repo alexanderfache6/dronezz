@@ -12,17 +12,17 @@ class ImageSegmentor():
 
     # ----------------------------------------
 
-    def __init__(self, reference_mission_number, mission_number, image_path):
+    def __init__(self, reference_mission_number, mission_number, image_file_path):
         self.mission_number = mission_number
         self.reference_mission_number = reference_mission_number
-        self.image_path = image_path
+        self.image_file_path = image_file_path
 
-        self.current_image = None
+        self.current_image = None # image to display in window
         self.current_points = [] # corners user has currently selected
 
-        self.original_image = None
+        self.original_image = None # copy used to reset window
         self.bordered_image = None # copy used to reset window
-        self.window_scale_factor = 10
+        self.window_scale_factor = 10 # fit window on screen
         self.NUM_REGIONS = len(REGION_NAMES)
 
     # ----------------------------------------
@@ -290,7 +290,7 @@ class ImageSegmentor():
 
     def go(self):
 
-        self.original_image = cv2.imread(self.image_path)
+        self.original_image = cv2.imread(self.image_file_path)
         self.current_image = copy.deepcopy(self.original_image)
 
         if PRECROP: # do this in case image is kind of circular
@@ -325,8 +325,8 @@ class ImageSegmentor():
 
     # ----------------------------------------
 
-def run(reference_mission_number, mission_number, image_path):
-    imageSegmentor = ImageSegmentor(reference_mission_number, mission_number, image_path)
+def run(reference_mission_number, mission_number, image_file_path):
+    imageSegmentor = ImageSegmentor(reference_mission_number, mission_number, image_file_path)
     imageSegmentor.go()
     print('done')
 
@@ -339,14 +339,14 @@ if __name__=='__main__':
         mission_number = int(sys.argv[2])
         print('Mission #%d' % (mission_number))
 
-    image_path = get_mission_segmentation_file_path(mission_number) + 'orthomosaic_FINAL.tiff'
+    image_file_path = get_mission_segmentation_file_path(mission_number) + 'orthomosaic_FINAL.tiff'
 
     # check if file exists
-    if not os.path.isfile(image_path):
-        sys.exit('[Error] File not found: %s' % (image_path))
+    if not os.path.isfile(image_file_path):
+        sys.exit('[Error] File not found: %s' % (image_file_path))
     else:
-        print('Loading mission image: %s' % (image_path))
+        print('Loading mission image: %s' % (image_file_path))
 
-    run(reference_mission_number, mission_number, image_path)
+    run(reference_mission_number, mission_number, image_file_path)
 
 # download mission_#_orthomosaic_FINAL.tiff after 2 compressions and put into missions/mission_#_segmentation directory
