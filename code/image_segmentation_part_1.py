@@ -1,5 +1,6 @@
 import copy
 import cv2
+import imutils
 from matplotlib.path import Path
 import numpy as np
 import os
@@ -11,8 +12,9 @@ class ImageSegmentor():
 
     # ----------------------------------------
 
-    def __init__(self, mission_number, image_path):
+    def __init__(self, reference_mission_number, mission_number, image_path):
         self.mission_number = mission_number
+        self.reference_mission_number = reference_mission_number
         self.image_path = image_path
 
         self.current_image = None
@@ -20,7 +22,7 @@ class ImageSegmentor():
 
         self.original_image = None
         self.bordered_image = None # copy used to reset window
-        self.window_scale_factor = 7
+        self.window_scale_factor = 10
         self.NUM_REGIONS = len(REGION_NAMES)
 
     # ----------------------------------------
@@ -30,6 +32,7 @@ class ImageSegmentor():
         h_window = int(round(h / self.window_scale_factor))
         w_window = int(round(w / self.window_scale_factor))
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        cv2.moveWindow(window_name, 20, 20)
         cv2.resizeWindow(window_name, (w_window, h_window))
 
     def select_points(self, event, x, y, flags, param):
@@ -42,6 +45,16 @@ class ImageSegmentor():
 
     def precrop_image(self):
         print('\n---------- Precropping Image ----------\n')
+        print('\"left-mouse\" - select point')
+        print('\"c\" - create polygon')
+        print('\"r\" - reset polygon')
+        print('\"s\" - save polygon\n')
+
+        h, w = self.current_image.shape[:2]
+        self.bordered_image = np.zeros((h+2*BORDER, w+2*BORDER, 3)).astype(np.uint8)
+        self.bordered_image[BORDER:h+BORDER, BORDER:w+BORDER] = self.current_image.astype(np.uint8)
+
+        self.current_image = copy.deepcopy(self.bordered_image)
 
         self.create_image_window('Precrop Image', self.current_image)
         cv2.setMouseCallback('Precrop Image', self.select_points, [(255, 0, 255)])
@@ -59,9 +72,9 @@ class ImageSegmentor():
                 cv2.rectangle(self.current_image, pt1=tuple(self.current_points[0]), pt2=tuple(self.current_points[1]), color=(123, 0, 123), thickness=15)
             elif key == ord('r'):
                 self.current_points = []
-                self.current_image = copy.deepcopy(self.original_image)
+                self.current_image = copy.deepcopy(self.bordered_image)
             elif key == ord('s'):
-                self.current_image = copy.deepcopy(self.original_image)
+                self.current_image = copy.deepcopy(self.bordered_image)
                 if len(self.current_points) == 2:
                     break
                 else:
@@ -80,12 +93,11 @@ class ImageSegmentor():
 
     def create_bordered_image(self):
         print('\n---------- Creating Bordered Image ----------\n')
+        print('Press any key to close')
 
         h, w = self.current_image.shape[:2]
-        self.bordered_image = np.zeros((h+2*BORDER_H, w+2*BORDER_W, 3)).astype(np.uint8)
-        self.bordered_image[BORDER_H:h+BORDER_H, BORDER_W:w+BORDER_W] = self.current_image.astype(np.uint8)
-
-        print('Press any key to close')
+        self.bordered_image = np.zeros((h+2*BORDER, w+2*BORDER, 3)).astype(np.uint8)
+        self.bordered_image[BORDER:h+BORDER, BORDER:w+BORDER] = self.current_image.astype(np.uint8)
 
         self.create_image_window('Bordered Image', self.bordered_image)
         cv2.imshow('Bordered Image', self.bordered_image)
@@ -94,13 +106,13 @@ class ImageSegmentor():
 
         if SAVE_BORDERED_IMAGE:
             print('\nSaving Bordered Image')
+            print(self.bordered_image.shape)
             cv2.imwrite(get_mission_segmentation_file_path(self.mission_number) + 'bordered.png', self.bordered_image)
 
     # ----------------------------------------
 
     def select_regions(self, all_polygons, num_polygons_per_region):
         print('\n---------- Selecting Regions ----------\n')
-
         print('\"left-mouse\" - select point')
         print('\"c\" - create polygon')
         print('\"r\" - reset polygon')
@@ -154,7 +166,7 @@ class ImageSegmentor():
     def compute_and_save_region_masks(self, all_polygons, num_polygons_per_region):
         print('---------- Computing and Saving Region Masks ----------')
 
-        h, w = self.current_image.shape[:2]
+        h, w = self.bordered_image.shape[:2]
 
         for i in range(0, self.NUM_REGIONS):
             print('\nRegion %d: %s' % (i+1, REGION_NAMES[i]))
@@ -168,9 +180,10 @@ class ImageSegmentor():
                 grid = path.contains_points(points)
                 grid = grid.reshape(h, w).astype(int)
 
-                # add current polygon to region maskW
+                # add current polygon to region mask
                 region_mask = cv2.bitwise_or(region_mask, grid)
 
+            print(region_mask.shape)
             np.save(get_mission_segmentation_file_path(self.mission_number) + 'region_mask_%s.npy' % (REGION_NAMES[i]), region_mask)
 
     # ----------------------------------------
@@ -222,7 +235,7 @@ class ImageSegmentor():
     def compute_and_save_samples(self, all_samples):
         print('\n---------- Computing and Saving Sample Masks ----------')
 
-        h, w = self.current_image.shape[:2]
+        h, w = self.bordered_image.shape[:2]
 
         for i in range(0, self.NUM_REGIONS):
             print('\nRegion %d: %s' % (i+1, REGION_NAMES[i]))
@@ -237,40 +250,41 @@ class ImageSegmentor():
             # add current polygon to region mask
             sample_mask = cv2.bitwise_or(sample_mask, grid)
 
+            print(sample_mask.shape)
             np.save(get_mission_segmentation_file_path(self.mission_number) + 'sample_mask_%s.npy' % (REGION_NAMES[i]), sample_mask)
 
     # ----------------------------------------
 
-    def select_landmarks(self):
-        print('\n---------- Selecting Landmarks ----------\n')
-
-        self.current_image = copy.deepcopy(self.bordered_image)
-
-        self.create_image_window('Landmarks Image', self.current_image)
-        cv2.setMouseCallback('Landmarks Image', self.select_points, [(0, 255, 0)])
-        cv2.imshow('Landmarks Image', self.current_image)
-
-        self.current_points = [] # clear
-
-        while True:
-            cv2.imshow('Landmarks Image', self.current_image)
-
-            key = cv2.waitKey(1) & 0xFF
-
-            if key == ord('r'):
-                self.current_points = []
-                self.current_image = copy.deepcopy(self.bordered_image)
-            elif key == ord('s'):
-                self.current_image = copy.deepcopy(self.bordered_image)
-                if len(self.current_points) == 3:
-                    break
-                else:
-                    print('must select at 3 landmarks - reset')
-                    self.current_points = []
-
-        cv2.destroyAllWindows()
-
-        return self.current_points
+    # def select_landmarks(self):
+    #     print('\n---------- Selecting Landmarks ----------\n')
+    #
+    #     self.current_image = copy.deepcopy(self.bordered_image)
+    #
+    #     self.create_image_window('Landmarks Image', self.current_image)
+    #     cv2.setMouseCallback('Landmarks Image', self.select_points, [(0, 255, 0)])
+    #     cv2.imshow('Landmarks Image', self.current_image)
+    #
+    #     self.current_points = [] # clear
+    #
+    #     while True:
+    #         cv2.imshow('Landmarks Image', self.current_image)
+    #
+    #         key = cv2.waitKey(1) & 0xFF
+    #
+    #         if key == ord('r'):
+    #             self.current_points = []
+    #             self.current_image = copy.deepcopy(self.bordered_image)
+    #         elif key == ord('s'):
+    #             self.current_image = copy.deepcopy(self.bordered_image)
+    #             if len(self.current_points) == 3:
+    #                 break
+    #             else:
+    #                 print('must select at 3 landmarks - reset')
+    #                 self.current_points = []
+    #
+    #     cv2.destroyAllWindows()
+    #
+    #     return self.current_points
 
     # ----------------------------------------
 
@@ -284,43 +298,45 @@ class ImageSegmentor():
 
         self.create_bordered_image()
 
-        if SELECT_REGIONS:
-            all_polygons = [] # list of lists containing polygons created for each region
-            num_polygons_per_region = np.zeros((self.NUM_REGIONS)).astype(int) # keep track for masks
+        if self.mission_number == self.reference_mission_number:
 
-            self.select_regions(all_polygons, num_polygons_per_region)
+            if SELECT_REGIONS:
+                all_polygons = [] # list of lists containing polygons created for each region
+                num_polygons_per_region = np.zeros((self.NUM_REGIONS)).astype(int) # keep track for masks
 
-            if SAVE_REGIONS:
-                self.compute_and_save_region_masks(all_polygons, num_polygons_per_region)
+                self.select_regions(all_polygons, num_polygons_per_region)
 
-        if SELECT_SAMPLES:
-            all_samples = [] # list of lists containing polygons created of each sample for each region
+                if SAVE_REGIONS:
+                    self.compute_and_save_region_masks(all_polygons, num_polygons_per_region)
 
-            self.select_samples(all_samples)
+            if SELECT_SAMPLES:
+                all_samples = [] # list of lists containing polygons created of each sample for each region
 
-            if SAVE_SAMPLES:
-                self.compute_and_save_samples(all_samples)
+                self.select_samples(all_samples)
 
-        if SELECT_LANDMARKS:
-            landmarks = self.select_landmarks()
+                if SAVE_SAMPLES:
+                    self.compute_and_save_samples(all_samples)
 
-            if SAVE_LANDMARKS:
-                np.save(get_mission_file_path(self.mission_number) + 'landmarks.npy', landmarks)
+            # if SELECT_LANDMARKS:
+            #     landmarks = self.select_landmarks()
+            #
+            #     if SAVE_LANDMARKS:
+            #         np.save(get_mission_file_path(self.mission_number) + 'landmarks.npy', landmarks)
 
     # ----------------------------------------
 
-def run(mission_number, image_path):
-    imageSegmentor = ImageSegmentor(mission_number, image_path)
+def run(reference_mission_number, mission_number, image_path):
+    imageSegmentor = ImageSegmentor(reference_mission_number, mission_number, image_path)
     imageSegmentor.go()
     print('done')
 
 if __name__=='__main__':
 
-    # get mission number
-    if len(sys.argv) != 2:
-        sys.exit('[Error] Include Mission #')
+    if len(sys.argv) != 3:
+        sys.exit('[Error] Include Reference Mission # & Mission #')
     else:
-        mission_number = int(sys.argv[1])
+        reference_mission_number = int(sys.argv[1])
+        mission_number = int(sys.argv[2])
         print('Mission #%d' % (mission_number))
 
     image_path = get_mission_segmentation_file_path(mission_number) + 'orthomosaic_FINAL.tiff'
@@ -331,8 +347,6 @@ if __name__=='__main__':
     else:
         print('Loading mission image: %s' % (image_path))
 
-    run(mission_number, image_path)
-
-
+    run(reference_mission_number, mission_number, image_path)
 
 # download mission_#_orthomosaic_FINAL.tiff after 2 compressions and put into missions/mission_#_segmentation directory
