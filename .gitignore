@@ -1,13 +1,4 @@
 *checkpoint.ipynb
 *.pyc
 
-/missions/mission_1_segmentation/*
-/missions/mission_2_segmentation/*
-/missions/mission_3_segmentation/*
-/missions/mission_4_segmentation/*
-/missions/mission_5_segmentation/*
-/missions/mission_6_segmentation/*
-/missions/mission_7_segmentation/*
-/missions/mission_8_segmentation/*
-/missions/mission_9_segmentation/*
-/missions/mission_10_segmentation/*
+/missions/mission_?_segmentation/*
