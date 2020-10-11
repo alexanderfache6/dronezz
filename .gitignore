@@ -1,4 +1,5 @@
 *checkpoint.ipynb
 *.pyc
 
+/missions/mission_1/*
 /missions/mission_?_segmentation/*
