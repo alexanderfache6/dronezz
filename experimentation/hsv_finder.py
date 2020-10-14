@@ -20,6 +20,7 @@ def run(mission_number, using_video=False):
         capture.set(4, 720)
 
     cv2.namedWindow("Trackbar")
+    cv2.resizeWindow("Trackbar", 1000, 400);
 
     # Now create 6 trackbars that will control the lower and upper range of
     # H,S and V channels. The Arguments are like this: Name of trackbar,
@@ -42,7 +43,6 @@ def run(mission_number, using_video=False):
             ret, frame = capture.read()
             if not ret:
                 break
-            # Flip the frame horizontally (Not required)
             frame = cv2.flip(frame, 1)
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -64,17 +64,15 @@ def run(mission_number, using_video=False):
         mask_3 = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR) # so it can be stacked
 
         stacked = np.hstack((frame, hsv, mask_3, masked_frame, masked_hsv))
-
-        # Show this stacked frame at 40% of the size.
-        cv2.imshow('Trackbars', cv2.resize(stacked, None, fx=0.6, fy=0.6))
+        cv2.imshow('Trackbars', cv2.resize(stacked, None, fx=0.8, fy=0.8))
 
         key = cv2.waitKey(1)
         if key == 27:
             break
 
         if key == ord('s'):
-            limits = [[l_h, l_s, l_v], [u_h, u_s, u_v]]
-            print(limits)
+            print('lower:', [l_h, l_s, l_v])
+            print('upper:', [u_h, u_s, u_v])
 
             # np.save('hsv_limits', limits)
             break
