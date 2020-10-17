@@ -3,4 +3,5 @@
 
 /missions/mission_1/*
 /missions/mission_?_segmentation/*
+/missions/mission_??_segmentation/*
 /random_images/
