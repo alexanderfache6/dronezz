@@ -53,7 +53,7 @@ def run(mission_number, use_BGR, using_video=False):
             if not ret:
                 break
             frame = cv2.flip(frame, 1)
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         if use_BGR:
             l_1 = cv2.getTrackbarPos("B lower", "Trackbar")
@@ -100,7 +100,8 @@ if __name__=='__main__':
         sys.exit('[Error] Include Mission # & BGR')
     else:
         mission_number = int(sys.argv[1])
-        use_BGR = bool(sys.argv[1])
+        use_BGR = int(sys.argv[2])
         print('Mission #%d' % (mission_number))
+        print('BGR %d' % (use_BGR))
 
     run(mission_number=mission_number, use_BGR=use_BGR, using_video=False)
