@@ -2,4 +2,4 @@
 
 # Poster
 
-<embed src="Capstone_Poster.pdf" width="100%" height="600">
+<embed src="Capstone_Poster.pdf" width="100%" height="800">
